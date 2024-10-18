@@ -1,0 +1,5 @@
+# Ignore 
+macros/*.pdf
+macros/*.jpg
+macros/*.eps
+macros/*.txt
