@@ -9,12 +9,12 @@ using namespace std;
 void transmission_check_y2(){
 
 	TString path("/data.local2/S533_June21_data/s533jun21/roots/");
-	//TString name("s533_51_gC_12mm_0090"); 
-	TString name("s533_51_empty_0086");
+	//TString name("s533_50_empty_53-54"); 
+	TString name("s533_50_gC_12mm_46-47");
 	TString fileNameId, fileTransmOut;
 	const char * path1 = path.Data();
 	const char * name1 = name.Data();
-	fileNameId.Form("%s%s_id.root", path1,name1);   
+	fileNameId.Form("%s%s_id_m.root", path1,name1);   
 	//fileNameHist.Form("%s%s_id_hist.root", path1,name1); 
 	TFile *file = new TFile(fileNameId,"READ");
 	TTree *tree = (TTree*)file->Get("IdTree");
@@ -25,7 +25,7 @@ void transmission_check_y2(){
 
 	cout<< "Processing: " << fileNameId <<endl;
 
-  	Float_t id_AoQ, id_z1, id_z2, id_x2, id_y2, tpc_ang_x_s2, tpc_ang_y_s2, tpc_x_41, tpc_y_41;
+  	Float_t id_AoQ, id_z1, id_z1_ch, id_z2, id_x2, id_y2, tpc_ang_x_s2, tpc_ang_y_s2, tpc_x_41, tpc_y_41;
   	Int_t N0 = 0;
   	Int_t N_sameZ = 0;
   	Float_t ratio;
@@ -40,6 +40,7 @@ void transmission_check_y2(){
 
   	tree->SetBranchAddress("id_AoQ",&id_AoQ);
   	tree->SetBranchAddress("id_z1",&id_z1);
+  	tree->SetBranchAddress("id_z1_ch",&id_z1_ch);
   	tree->SetBranchAddress("id_z2",&id_z2);
 	tree->SetBranchAddress("id_x2",&id_x2);
 	tree->SetBranchAddress("id_y2",&id_y2);
@@ -59,25 +60,25 @@ void transmission_check_y2(){
     }
 
 
-    TH1F *h_z1_cut = new TH1F("h_z1_cut","h_z1_cut",500,4,10);
-  	h_z1_cut ->SetTitle("Z1 from MUSIC41, before target, with condition on Z1 and TPC");
+    	TH1F *h_z1_ch_cut = new TH1F("h_z1_ch_cut","h_z1_ch_cut",1000,0,4096);
+  	h_z1_ch_cut ->SetTitle("Z1 from MUSIC41 in ch, before target, with cut on the main peak in ch and TPC");
 
 	TH2F *h_id_cut_tpc = new TH2F("h_id_cut_tpc","h_id_cut_tpc",500,1.5,2.5,500,4,10);
   	h_id_cut_tpc ->GetXaxis()->SetTitle("AoQ");
   	h_id_cut_tpc ->GetYaxis()->SetTitle("Z music41"); 
   	h_id_cut_tpc ->SetTitle("ID plot with Z from MUSIC41, before target, with condition on TPC");
 
-  	TH1F *h_id_z1_cut_tpc = new TH1F("h_id_z1_cut_tpc","h_id_z1_cut_tpc",500,4,10);
-  	h_id_z1_cut_tpc ->SetTitle("Z1 from MUSIC41, before target, with condition on TPC");
-  	h_id_z1_cut_tpc ->GetXaxis()->SetTitle("z1 MUSIC41"); 
+  	TH1F *h_id_z1_ch_cut_tpc = new TH1F("h_id_z1_ch_cut_tpc","h_id_z1_ch_cut_tpc",1000,0,4096);
+  	h_id_z1_ch_cut_tpc ->SetTitle("Z1 from MUSIC41 in ch, before target, with condition on TPC");
+  	h_id_z1_ch_cut_tpc ->GetXaxis()->SetTitle("z1 MUSIC41 in ch"); 
 
   	TH2F *h_id_cut = new TH2F("h_id_cut","h_id_cut",500,1.5,2.5,500,4,10);
   	h_id_cut ->GetXaxis()->SetTitle("AoQ");
   	h_id_cut ->GetYaxis()->SetTitle("Z music41"); 
-  	h_id_cut ->SetTitle("ID plot with Z from MUSIC41, before target, with condition on Z1 and TPC");
+  	h_id_cut ->SetTitle("ID plot with Z from MUSIC41, before target, with condition on Z1 in ch and TPC");
 
   	TH1F *h_z2_cut = new TH1F("h_z2_cut","h_z2_cut",500,4,10);
-  	h_z2_cut ->SetTitle("Z2 from MUSIC42, after target, with condition on Z1 and TPC");
+  	h_z2_cut ->SetTitle("Z2 from MUSIC42, after target, with condition on Z1 in ch and TPC");
 
   	TH1F *h_id_y2 = new TH1F("h_id_y2","h_id_y2",100,-50,50);
   	TH1F *h_id_y2_slice = new TH1F("h_id_y2_slice","h_id_y2_slice",100,-50,50);
@@ -86,47 +87,47 @@ void transmission_check_y2(){
   	printf("Total number of events is %lld \n",nentries);
 
   	//loop over TPC cut condition
-  	for (int k = -10; k <= 10; k++) {
+  	for (int k = -20; k <= 20; k+=5) {
   		tpc_cut_c1 = k;
-  		tpc_cut_c2 = k+1;
+  		tpc_cut_c2 = k+5;
   		printf("TPC cut low %d , TPC cut high %d \n",tpc_cut_c1,tpc_cut_c2);
 
-  		h_z1_cut->Reset();
+  		h_z1_ch_cut->Reset();
   		h_id_cut->Reset();
-  		h_id_z1_cut_tpc->Reset();
+  		h_id_z1_ch_cut_tpc->Reset();
   		h_id_cut_tpc->Reset();
   		h_z2_cut->Reset();
 
-		//loop to fill h_id_z1_cut_tpc and fit it later
+		//loop to fill h_id_z1_ch_cut_tpc and fit it later
 		//also to show what is cut on
 		for (Int_t i=0;i<nentries;i++) {
-			if(i % 100000 == 0 && i!=0) printf("Events processed %d \n",i);
+			//if(i % 100000 == 0 && i!=0) printf("Events processed %d \n",i);
 			tree->GetEntry(i);
 			if(//id_x2 > -9 && id_x2 < 9 &&
 				id_y2 > tpc_cut_c1 && id_y2 < tpc_cut_c2){
 				//tpc_ang_x_s2 > tpc_cut_c1 && tpc_ang_x_s2 < tpc_cut_c2
 				h_id_cut_tpc->Fill(id_AoQ,id_z1);
-				h_id_z1_cut_tpc->Fill(id_z1);
+				h_id_z1_ch_cut_tpc->Fill(id_z1_ch);
 			}
 		}
 
-		TF1 *gaus_Z1 = new TF1("gaus_Z1", "gaus", 7.5, 8.5);
+		TF1 *gaus_Z1 = new TF1("gaus_Z1", "gaus",1700,2500);
 		gaus_Z1->SetLineColor(kRed); 
-		h_id_z1_cut_tpc->Fit("gaus_Z1","Q NODRAW");
+		h_id_z1_ch_cut_tpc->Fit("gaus_Z1","Q NODRAW");
 		double mean1 = gaus_Z1->GetParameter(1);
 		double sigma1 = gaus_Z1->GetParameter(2);
 		id_z1_c1 = mean1 - 3.5 * sigma1;
 		id_z1_c2 = mean1 + 3.5 * sigma1;
 
 		for (Int_t i=0;i<nentries;i++) {
-			if(i % 100000 == 0 && i!=0) printf("Events processed %d \n",i);
+			//if(i % 100000 == 0 && i!=0) printf("Events processed %d \n",i);
 			tree->GetEntry(i);
-			if(id_z1 > id_z1_c1 && id_z1 < id_z1_c2 &&
+			if(id_z1_ch > id_z1_c1 && id_z1_ch < id_z1_c2 &&
 			   //id_x2 > -9 && id_x2 < 9 &&
 			   id_y2 > tpc_cut_c1 && id_y2 < tpc_cut_c2){
 				//tpc_ang_x_s2 > tpc_cut_c1 && tpc_ang_x_s2 < tpc_cut_c2){
 					h_id_cut->Fill(id_AoQ,id_z1);
-					h_z1_cut->Fill(id_z1);
+					h_z1_ch_cut->Fill(id_z1_ch);
 					h_z2_cut->Fill(id_z2);
 			}
 		}
@@ -179,6 +180,12 @@ void transmission_check_y2(){
 	//drawing 
 	tpc_cut_c1 = -1;
 	tpc_cut_c2 = 0;
+	h_z1_ch_cut->Reset();
+  	h_id_cut->Reset();
+  	h_id_z1_ch_cut_tpc->Reset();
+  	h_id_cut_tpc->Reset();
+  	h_z2_cut->Reset();
+
 	for (Int_t i=0;i<nentries;i++) {
 			if(i % 100000 == 0 && i!=0) printf("Events processed %d \n",i);
 			tree->GetEntry(i);
@@ -187,13 +194,13 @@ void transmission_check_y2(){
 				id_y2 > tpc_cut_c1 && id_y2 < tpc_cut_c2){
 				//tpc_ang_x_s2 > tpc_cut_c1 && tpc_ang_x_s2 < tpc_cut_c2
 				h_id_cut_tpc->Fill(id_AoQ,id_z1);
-				h_id_z1_cut_tpc->Fill(id_z1);
+				h_id_z1_ch_cut_tpc->Fill(id_z1_ch);
 			}
 		}
 
-		TF1 *gaus_Z1 = new TF1("gaus_Z1", "gaus", 7.5, 8.5);
+		TF1 *gaus_Z1 = new TF1("gaus_Z1", "gaus",1700,2500);
 		gaus_Z1->SetLineColor(kRed); 
-		h_id_z1_cut_tpc->Fit("gaus_Z1","Q NODRAW");
+		h_id_z1_ch_cut_tpc->Fit("gaus_Z1","Q NODRAW");
 		double mean1 = gaus_Z1->GetParameter(1);
 		double sigma1 = gaus_Z1->GetParameter(2);
 		id_z1_c1 = mean1 - 3.5 * sigma1;
@@ -202,12 +209,12 @@ void transmission_check_y2(){
 		for (Int_t i=0;i<nentries;i++) {
 			if(i % 100000 == 0 && i!=0) printf("Events processed %d \n",i);
 			tree->GetEntry(i);
-			if(id_z1 > id_z1_c1 && id_z1 < id_z1_c2 &&
+			if(id_z1_ch > id_z1_c1 && id_z1_ch < id_z1_c2 &&
 			   //id_x2 > -9 && id_x2 < 9 &&
 			   id_y2 > tpc_cut_c1 && id_y2 < tpc_cut_c2){
 				//tpc_ang_x_s2 > tpc_cut_c1 && tpc_ang_x_s2 < tpc_cut_c2){
 					h_id_cut->Fill(id_AoQ,id_z1);
-					h_z1_cut->Fill(id_z1);
+					h_z1_ch_cut->Fill(id_z1_ch);
 					h_z2_cut->Fill(id_z2);
 					h_id_y2_slice->Fill(id_y2);
 			}
@@ -252,7 +259,7 @@ void transmission_check_y2(){
 	lin2->Draw("same");
 
 	cc->cd(2);
-	h_id_z1_cut_tpc->Draw();
+	h_id_z1_ch_cut_tpc->Draw();
 	TLine *left1 = new TLine(id_z1_c1, 0, id_z1_c1, 1000);
     left1->SetLineColor(kRed);
     //left1->SetLineStyle(2);

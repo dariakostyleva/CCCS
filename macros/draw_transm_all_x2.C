@@ -4,10 +4,10 @@
 #include <vector>
 #include <cmath> 
 
-void draw_transm_y2(){
+void draw_transm_all_x2(){
 
-    const std::string file_out_name = "s533_50_empty_53-54_transm_y2.txt";
-    const std::string file_in_name = "s533_50_gC_12mm_46-47_transm_y2.txt";
+    const std::string file_out_name = "s533_50_empty_53-54_transm_all_x2.txt";
+    const std::string file_in_name = "s533_50_gC_12mm_46-47_transm_all_x2.txt";
 
     std::ifstream file_out(file_out_name);
     std::ifstream file_in(file_in_name);
@@ -21,7 +21,6 @@ void draw_transm_y2(){
 
     double t = 8.87948E+22; // taregt property 12 gC, 1/cm2
     double t_err = 5.44607E+19;
-
     double cons = 1e27; //cm2 to mbarn
 
     double percentageDifference_limit = 0.5;
@@ -78,6 +77,10 @@ void draw_transm_y2(){
     for (double val2 : Y_in) {
         //std::cout << "Y_in: " << val2 << " "<< std::endl;
     }
+    // Print X_in
+    for (double val22 : X_in) {
+        //std::cout << "X_in: " << val22 << " "<< std::endl;
+    }
 
     // Calculate cross section by dividing vetors
     for (size_t i = 0; i < n_out; ++i) {
@@ -119,7 +122,7 @@ void draw_transm_y2(){
     for (int i = 0; i < graph_in->GetN(); ++i) {
         double x, y;
         graph_in->GetPoint(i, x, y);
-    //std::cout << "x: " << x << " y "<<y<< std::endl;
+	//std::cout << "x: " << x << " y "<<y<< std::endl;
         if (x >= -5 && x <= 5) {
             sumY += y;
             ++count;
@@ -135,6 +138,7 @@ void draw_transm_y2(){
     // Vector to store indices of consecutive close points
     std::vector<int> closePoints;
     bool foundSequence = false;
+    
     double x_first, x_last;
 
     for (int i = 0; i < graph_in->GetN(); ++i) {
@@ -211,6 +215,7 @@ void draw_transm_y2(){
     //*****************************
     //DERIVATIVES !!!!    
     //*****************************
+    std::cout << "** DERIVATIVES **"<< std::endl;
     int window = 3;  // Moving average window
     double threshold = 0.004; // Threshold to select "stable" region of transmission
     int consec_num = 5;  // Minimal number of points where transmission should be "stable"
@@ -234,7 +239,6 @@ void draw_transm_y2(){
     for (size_t i = 0; i < flat_indices.size(); i++) {
         std::cout << X_in[flat_indices[i]] << " ";
     }
-
     std::cout << std::endl;
     
     //*****************************
@@ -272,13 +276,12 @@ void draw_transm_y2(){
     }
     TGraph* graph_in_diff = new TGraph(n_in, &X_in[0], &Y_in_avr_diff[0]);
     TGraph* graph_threshold = new TGraph(n_in, &X_in[0], &Y_threshold[0]);
-
-    //finding x of stable y
+    // Finding x of stable y
     int consecutive_count = 0;
     int start_index = -1;           // To store the starting index of the range
     int end_index = -1;             // To store the ending index of the range
 
-    // Loop through Y_threshold to find consecutive 1s
+     // Loop through Y_threshold to find consecutive 1s
     for (int i = 0; i < n_in; ++i) {
         if (Y_threshold[i] == 1) {
             if (consecutive_count == 0) {
@@ -326,7 +329,6 @@ void draw_transm_y2(){
     } else {
         std::cout << "No range found with " << consec_num << " consecutive 1s.\n";
     }
-
     double fitlim1 = X_in[start_index];
     double fitlim2 = X_in[end_index];
     // fitting cccs in the range
@@ -334,12 +336,24 @@ void draw_transm_y2(){
     graph_cccs->Fit(fitpol0, "RQ");
     double a = fitpol0->GetParameter(0);
     double aErr = fitpol0->GetParError(0);
+    //return;
 
     //**************************************
     // Plotting
     TCanvas *cc1 = new TCanvas("cc1","COMPARISON TO CENTRAL REGION");
-    cc1->Divide(1,2);
+    cc1->Divide(2,2);
     cc1->cd(1);
+    graph_out->SetMarkerStyle(21);
+    graph_out->SetMarkerColor(kBlue);
+    graph_out->SetMarkerSize(1);
+    graph_out->SetLineWidth(2);
+    graph_out->GetXaxis()->SetTitle("X position at S2");
+    graph_out->GetYaxis()->SetTitle("Transmission");
+    graph_out->GetYaxis()->SetRangeUser(0.9, 1.01);
+    graph_out->Draw("AP");
+    lineFirst->Draw("same");
+    lineLast->Draw("same");
+    cc1->cd(3);
     graph_in->Draw("AP");
     lineFirst->Draw("same");
     lineLast->Draw("same");
@@ -356,53 +370,11 @@ void draw_transm_y2(){
     double acc = fitpol0cc->GetParameter(0);
     double aErrcc = fitpol0cc->GetParError(0);
     TLegend *lcc = new TLegend(0.3, 0.3, 0.4, 0.4);
-    lcc->AddEntry(graph_cccs, "CCCS of 15O in 12 mm gC", "lp");
+    lcc->AddEntry(graph_cccs, "CCCS of 16O in 6 mm gC", "lp");
     lcc->AddEntry(fitpol0cc, Form("Fit: %.3f * x ", acc), "l");
     lcc->Draw("same");
     lineFirst->Draw("same");
     lineLast->Draw("same");
-
-
-    TCanvas *c1 = new TCanvas("c1", "DERIVATIVES");
-    c1->Divide(2,2);
-    c1->cd(1);
-    graph_in->SetMarkerStyle(20);
-    graph_in->Draw("AP");
-    graph_in_avg->SetMarkerStyle(21);
-    graph_in_avg->SetMarkerColor(kGreen+3);
-    graph_in_avg->Draw("P SAME");
-    // Adding a legend to differentiate original graph and moving average
-    auto legend = new TLegend(0.1, 0.7, 0.3, 0.9);
-    legend->AddEntry(graph_in, "R_in original", "p");
-    legend->AddEntry(graph_in_avg, Form("R_in moving average on %d points", window), "p");
-    legend->Draw();
-    c1->cd(2);
-    graph_in_diff->SetMarkerStyle(20);
-    graph_in_diff->SetMarkerColor(kBlack);
-    graph_in_diff->GetXaxis()->SetTitle("Y position at S2");
-    graph_in_diff->GetYaxis()->SetTitle("Absolute difference");
-    graph_in_diff->Draw("AP");  
-    // Add a horizontal line at the threshold value
-    TLine* threshold_line = new TLine(X_in[0], threshold, X_in[n_in-1], threshold);
-    threshold_line->SetLineColor(kBlack);  // Set the color of the line
-    threshold_line->SetLineStyle(2);       // Set dashed line
-    threshold_line->SetLineWidth(2);       // Set line width
-    threshold_line->Draw("SAME"); 
-    c1->cd(3);
-    graph_threshold->SetMarkerStyle(20);
-    graph_threshold->SetMarkerColor(kBlack);
-    graph_threshold->GetXaxis()->SetTitle("Y position at S2");
-    graph_threshold->GetYaxis()->SetTitle("Threshold crossing");
-    graph_threshold->Draw("AP");  
-    c1->cd(4);
-    graph_in->Draw("AP");
-    for (size_t i = 0; i < flat_indices.size(); i++) {
-        // Mark flat regions with vertical lines
-        TLine* line = new TLine(X_in[flat_indices[i]], Y_in[flat_indices[i]] - 1, X_in[flat_indices[i]], Y_in[flat_indices[i]] + 1);
-        line->SetLineColor(kRed);
-        line->SetLineStyle(2);  // Dashed lines for flat regions
-        line->Draw();
-    }
 
     TCanvas* c = new TCanvas("c", "MOVING AVERAGE");
     c->Divide(2,2);
@@ -411,7 +383,7 @@ void draw_transm_y2(){
     graph_out->SetMarkerColor(kBlue);
     graph_out->SetMarkerSize(1);
     graph_out->SetLineWidth(2);
-    graph_out->GetXaxis()->SetTitle("Y position at S2");
+    graph_out->GetXaxis()->SetTitle("X position at S2");
     graph_out->GetYaxis()->SetTitle("Transmission");
     graph_out->GetYaxis()->SetRangeUser(0.9, 1.01);
     graph_out->Draw("AP");// "A" for axis, "P" for points with errors
@@ -434,7 +406,7 @@ void draw_transm_y2(){
     graph_in->SetMarkerColor(kRed);
     graph_in->SetMarkerSize(1);
     graph_in->SetLineWidth(2);
-    graph_in->GetXaxis()->SetTitle("Y position at S2");
+    graph_in->GetXaxis()->SetTitle("X position at S2");
     graph_in->GetYaxis()->SetTitle("Transmission");
     graph_in->GetYaxis()->SetRangeUser(0.9, 1.01);
     graph_in->Draw("AP"); 
@@ -449,11 +421,54 @@ void draw_transm_y2(){
     graph_cccs->SetMarkerColor(kGreen);
     graph_cccs->SetMarkerSize(1);
     graph_cccs->SetLineWidth(2);
-    graph_cccs->GetXaxis()->SetTitle("Y position at S2");
+    graph_cccs->GetXaxis()->SetTitle("X position at S2");
     graph_cccs->GetYaxis()->SetTitle("CCCS, mbarn");
     graph_cccs->Draw("AP");
     TLegend *lc = new TLegend(0.3, 0.3, 0.4, 0.4);
     lc->AddEntry(graph_cccs, "CCCS of 15O in 12 mm gC", "lp");
     lc->AddEntry(fitpol0, Form("Fit: %.3f * x ", a), "l");
     lc->Draw("same");
+
+
+    TCanvas *c1 = new TCanvas("c1", "DERIVATIVES");
+    c1->Divide(2,2);
+    c1->cd(1);
+    graph_in->SetMarkerStyle(20);
+    graph_in->Draw("AP");
+    graph_in_avg->SetMarkerStyle(21);
+    graph_in_avg->SetMarkerColor(kGreen+3);
+    graph_in_avg->Draw("P SAME");
+    // Adding a legend to differentiate original graph and moving average
+    auto legend = new TLegend(0.1, 0.7, 0.3, 0.9);
+    legend->AddEntry(graph_in, "R_in original", "p");
+    legend->AddEntry(graph_in_avg, Form("R_in moving average on %d points", window), "p");
+    legend->Draw();
+    c1->cd(2);
+    graph_in_diff->SetMarkerStyle(20);
+    graph_in_diff->SetMarkerColor(kBlack);
+    graph_in_diff->GetXaxis()->SetTitle("X position at S2");
+    graph_in_diff->GetYaxis()->SetTitle("Absolute difference");
+    graph_in_diff->Draw("AP");  
+    // Add a horizontal line at the threshold value
+    TLine* threshold_line = new TLine(X_in[0], threshold, X_in[n_in-1], threshold);
+    threshold_line->SetLineColor(kBlack);  // Set the color of the line
+    threshold_line->SetLineStyle(2);       // Set dashed line
+    threshold_line->SetLineWidth(2);       // Set line width
+    threshold_line->Draw("SAME"); 
+    c1->cd(3);
+    graph_threshold->SetMarkerStyle(20);
+    graph_threshold->SetMarkerColor(kBlack);
+    graph_threshold->GetXaxis()->SetTitle("X position at S2");
+    graph_threshold->GetYaxis()->SetTitle("Threshold crossing");
+    graph_threshold->Draw("AP");  
+    c1->cd(4);
+    graph_in->Draw("AP");
+    for (size_t i = 0; i < flat_indices.size(); i++) {
+        // Mark flat regions with vertical lines
+        TLine* line = new TLine(X_in[flat_indices[i]], Y_in[flat_indices[i]] - 1, X_in[flat_indices[i]], Y_in[flat_indices[i]] + 1);
+        line->SetLineColor(kRed);
+        line->SetLineStyle(2);  // Dashed lines for flat regions
+        line->Draw();
+    }
 }
+

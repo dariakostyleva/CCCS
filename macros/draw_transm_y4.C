@@ -4,17 +4,10 @@
 #include <vector>
 #include <cmath> 
 
-void draw_transm_y2(){
+void draw_transm_y4(){
 
-    const std::string file_out_name = "s533_50_empty_53-54_transm_y2.txt";
-    const std::string file_in_name = "s533_50_gC_12mm_46-47_transm_y2.txt";
-
-    std::ifstream file_out(file_out_name);
-    std::ifstream file_in(file_in_name);
-
-    std::cout << "Processing files:\n"
-              << "Target in file: " << file_in_name << "\n"
-              << "Target out file: " << file_out_name << std::endl;
+    std::ifstream file_out("s533_50_empty_53-54_transm_y4.txt");
+    std::ifstream file_in("s533_50_gC_12mm_46-47_transm_y4.txt");
 
     //double t = 4.42913E+22; // taregt property 6 gC, 1/cm2
     //double t_err = 4.72564E+19; // taregt property, std of t
@@ -24,7 +17,7 @@ void draw_transm_y2(){
 
     double cons = 1e27; //cm2 to mbarn
 
-    double percentageDifference_limit = 0.5;
+    double percentageDifference_limit = 0.2;
     
     if (!file_in.is_open() && !file_out.is_open()) {
         std::cerr << "Error: Could not open txt files" << std::endl;
@@ -108,7 +101,6 @@ void draw_transm_y2(){
     //*****************************
     //COMPARISON TO CENTRAL REGION !!!!    
     //*****************************
-    std::cout << "** COMPARISON TO CENTRAL REGION **"<< std::endl;
 
     double sumY = 0;
     int count = 0;
@@ -119,7 +111,7 @@ void draw_transm_y2(){
     for (int i = 0; i < graph_in->GetN(); ++i) {
         double x, y;
         graph_in->GetPoint(i, x, y);
-    //std::cout << "x: " << x << " y "<<y<< std::endl;
+	//std::cout << "x: " << x << " y "<<y<< std::endl;
         if (x >= -5 && x <= 5) {
             sumY += y;
             ++count;
@@ -134,6 +126,8 @@ void draw_transm_y2(){
     }
     // Vector to store indices of consecutive close points
     std::vector<int> closePoints;
+
+    // Flag to check if we have found a valid sequence of points
     bool foundSequence = false;
     double x_first, x_last;
 
@@ -145,8 +139,8 @@ void draw_transm_y2(){
         double percentageDifference = std::abs(y - averageY) / averageY * 100;
 
         if (percentageDifference < percentageDifference_limit) {
-            //std::cout << "percentageDifference = " << percentageDifference  << std::endl;
-            //std::cout << "X = " << x << ", Y = " << y << std::endl;
+            std::cout << "percentageDifference = " << percentageDifference  << std::endl;
+            std::cout << "X = " << x << ", Y = " << y << std::endl;
             closePoints.push_back(i);
 
             // Record the first and last X values within the first valid range
@@ -159,11 +153,11 @@ void draw_transm_y2(){
             if (closePoints.size() >= 5) {
                 foundSequence = true;
                 std::cout << "Found a range with " << closePoints.size() 
-                          << " consecutive X points where Y is within "<< percentageDifference_limit 
-                          << "% of the average:";
+                          << " consecutive points where Y is within "<< percentageDifference_limit 
+                          << "% of the average:" << std::endl;
                 for (int j : closePoints) {
                     graph_in->GetPoint(j, x, y);
-                    std::cout << x << " ";
+                    std::cout << "X = " << x << ", Y = " << y << std::endl;
                 }
                 break; // Stop after finding the first valid range
             }
@@ -175,12 +169,11 @@ void draw_transm_y2(){
     if (closePoints.size() >= 5) {
         foundSequence = true;
         std::cout << "Found a range with " << closePoints.size() 
-                          << " consecutive X points where Y is within "<< percentageDifference_limit 
-                          << "% of the average:";
+                  << " consecutive points where Y is within 1% of the average:" << std::endl;
         for (int j : closePoints) {
             double x, y;
             graph_in->GetPoint(j, x, y);
-            std::cout  << x <<" ";
+            std::cout << "X = " << x << ", Y = " << y << std::endl;
         }
     }
 
@@ -207,13 +200,10 @@ void draw_transm_y2(){
         std::cout << "No range of 5 or more consecutive points found where Y is within 1% of the average." << std::endl;
     }
 
-    std::cout << std::endl;
+  
     //*****************************
     //DERIVATIVES !!!!    
     //*****************************
-    int window = 3;  // Moving average window
-    double threshold = 0.004; // Threshold to select "stable" region of transmission
-    int consec_num = 5;  // Minimal number of points where transmission should be "stable"
     std::vector<double> Derivative;
     std::vector<int> flat_indices;
     double thresh_deriv = 0.004;  // Derivative threshold for "flatness"
@@ -234,14 +224,14 @@ void draw_transm_y2(){
     for (size_t i = 0; i < flat_indices.size(); i++) {
         std::cout << X_in[flat_indices[i]] << " ";
     }
-
     std::cout << std::endl;
     
     //*****************************
     //MOVING AVERAGE !!!!    
     //*****************************
-    std::cout << "** MOVING AVERAGE **"<< std::endl;
-
+    int window = 3;  // Moving average window
+    double threshold = 0.004; // Threshold to select "stable" region of transmission
+    int consec_num = 5;  // Minimal number of points where transmission should be "stable"
     std::vector<double> Y_in_avr(n_in); // Vector to store the moving average y-values
     // Loop to compute the moving average
     for (int i = 0; i < n_in; ++i) {
@@ -272,13 +262,12 @@ void draw_transm_y2(){
     }
     TGraph* graph_in_diff = new TGraph(n_in, &X_in[0], &Y_in_avr_diff[0]);
     TGraph* graph_threshold = new TGraph(n_in, &X_in[0], &Y_threshold[0]);
-
-    //finding x of stable y
+    // Finding x of stable y
     int consecutive_count = 0;
     int start_index = -1;           // To store the starting index of the range
     int end_index = -1;             // To store the ending index of the range
 
-    // Loop through Y_threshold to find consecutive 1s
+     // Loop through Y_threshold to find consecutive 1s
     for (int i = 0; i < n_in; ++i) {
         if (Y_threshold[i] == 1) {
             if (consecutive_count == 0) {
@@ -334,6 +323,7 @@ void draw_transm_y2(){
     graph_cccs->Fit(fitpol0, "RQ");
     double a = fitpol0->GetParameter(0);
     double aErr = fitpol0->GetParError(0);
+    //return;
 
     //**************************************
     // Plotting
@@ -379,7 +369,7 @@ void draw_transm_y2(){
     c1->cd(2);
     graph_in_diff->SetMarkerStyle(20);
     graph_in_diff->SetMarkerColor(kBlack);
-    graph_in_diff->GetXaxis()->SetTitle("Y position at S2");
+    graph_in_diff->GetXaxis()->SetTitle("Y position at S4");
     graph_in_diff->GetYaxis()->SetTitle("Absolute difference");
     graph_in_diff->Draw("AP");  
     // Add a horizontal line at the threshold value
@@ -391,7 +381,7 @@ void draw_transm_y2(){
     c1->cd(3);
     graph_threshold->SetMarkerStyle(20);
     graph_threshold->SetMarkerColor(kBlack);
-    graph_threshold->GetXaxis()->SetTitle("Y position at S2");
+    graph_threshold->GetXaxis()->SetTitle("Y position at S4");
     graph_threshold->GetYaxis()->SetTitle("Threshold crossing");
     graph_threshold->Draw("AP");  
     c1->cd(4);
@@ -411,10 +401,10 @@ void draw_transm_y2(){
     graph_out->SetMarkerColor(kBlue);
     graph_out->SetMarkerSize(1);
     graph_out->SetLineWidth(2);
-    graph_out->GetXaxis()->SetTitle("Y position at S2");
+    graph_out->GetXaxis()->SetTitle("Y position at S4");
     graph_out->GetYaxis()->SetTitle("Transmission");
     graph_out->GetYaxis()->SetRangeUser(0.9, 1.01);
-    graph_out->Draw("AP");// "A" for axis, "P" for points with errors
+    graph_out->Draw("AP");// "B" for axis, "P" for points with errors
     TLine *line1 = new TLine(fitlim1, 0.9, fitlim1, 1);
     line1->SetLineColor(kBlue);
     line1->SetLineStyle(2);
@@ -434,7 +424,7 @@ void draw_transm_y2(){
     graph_in->SetMarkerColor(kRed);
     graph_in->SetMarkerSize(1);
     graph_in->SetLineWidth(2);
-    graph_in->GetXaxis()->SetTitle("Y position at S2");
+    graph_in->GetXaxis()->SetTitle("Y position at S4");
     graph_in->GetYaxis()->SetTitle("Transmission");
     graph_in->GetYaxis()->SetRangeUser(0.9, 1.01);
     graph_in->Draw("AP"); 
@@ -449,7 +439,7 @@ void draw_transm_y2(){
     graph_cccs->SetMarkerColor(kGreen);
     graph_cccs->SetMarkerSize(1);
     graph_cccs->SetLineWidth(2);
-    graph_cccs->GetXaxis()->SetTitle("Y position at S2");
+    graph_cccs->GetXaxis()->SetTitle("Y position at S4");
     graph_cccs->GetYaxis()->SetTitle("CCCS, mbarn");
     graph_cccs->Draw("AP");
     TLegend *lc = new TLegend(0.3, 0.3, 0.4, 0.4);
@@ -457,3 +447,125 @@ void draw_transm_y2(){
     lc->AddEntry(fitpol0, Form("Fit: %.3f * x ", a), "l");
     lc->Draw("same");
 }
+
+ //SLICES !!!!
+    /*
+    int sliceWidth = 3; double chiSqThreshold = 1.0;
+    int nPoints = graph_in->GetN();
+    TCanvas *c1 = new TCanvas("c1", "Fit slices", 800, 600);
+    graph_in->Draw("AP"); // Draw the graph with error bars
+    int firstX = graph_in->GetX()[0];
+    double lastX = graph_in->GetX()[graph_in->GetN() - 1];
+    int nSlices = nPoints / sliceWidth;
+    std::cout << "firstX  " << firstX <<endl;
+    std::cout << "lastX  " << lastX <<endl;
+    std::cout << "nPoints  " << nPoints <<endl;
+    std::cout << "nSlices  " << nSlices <<endl;
+    TCanvas *sliceCanvas = new TCanvas("sliceCanvas", "Slice Graphs", 1200, 800);
+    int nCols = TMath::CeilNint(sqrt(nSlices)); // Number of columns
+    int nRows = TMath::CeilNint((double)nSlices / nCols); // Number of rows
+    sliceCanvas->Divide(nCols, nRows); // Divide canvas into subplots
+    std::cout << "nCols  " << nCols <<endl;
+    std::cout << "nRows  " << nRows <<endl;
+    int sliceIndex = 1; // Initialize slice index to 1
+    std::vector<double> fitValues;
+    std::vector<double> fitErrors;
+
+    // Loop through slices of the graph
+    for (int i = firstX; i <= lastX; i += sliceWidth) {
+        sliceCanvas->cd(sliceIndex); // Switch to the current subplot
+        std::cout << "sliceIndex  " << sliceIndex <<endl;
+        // Create arrays for the slice data
+        double *xSlice = new double[sliceWidth];
+        double *ySlice = new double[sliceWidth];
+        double *exSlice = new double[sliceWidth];
+        double *eySlice = new double[sliceWidth];
+        
+        
+        // Find the starting index in the graph for the current x value i
+        int startIdx = -1;
+        for (int k = 0; k < nPoints; ++k) {
+            double xVal;
+            graph_in->GetPoint(k, xVal, ySlice[0]); // Get x value from the graph
+            if (xVal >= i) {
+                startIdx = k;
+                break; // Found the first index with x >= i
+            }
+        }
+
+        // Collect points within the slice range
+        int count = 0;
+        for (int j = startIdx; j < nPoints && count < sliceWidth; ++j) {
+            double xVal;
+            graph_in->GetPoint(j, xVal, ySlice[count]);
+            if (xVal >= i && xVal < i + sliceWidth) {
+                xSlice[count] = xVal;
+                exSlice[count] = graph_in->GetEX()[j];
+                eySlice[count] = graph_in->GetEY()[j];
+                count++;
+            }
+        }
+        
+        // Create a new TGraphErrors for the slice
+        TGraphErrors *sliceGraph = new TGraphErrors(sliceWidth, xSlice, ySlice, exSlice, eySlice);
+        sliceGraph->SetMinimum(0.9); // Set the minimum y value
+        sliceGraph->SetMaximum(1.0); // Set the maximum y value
+        sliceGraph->SetMarkerColor(kBlue);
+        sliceGraph->SetMarkerStyle(20);
+        sliceGraph->Draw("");
+
+        
+        // Fit a constant (flat) line to the current slice
+        TF1 *fitFunc = new TF1("fitFunc", "pol0", sliceGraph->GetX()[0], sliceGraph->GetX()[sliceWidth - 1]);
+        sliceGraph->Fit(fitFunc, "R");
+        double fitValue = fitFunc->GetParameter(0);
+        double fitError = fitFunc->GetParError(0);
+
+        fitValues.push_back(fitValue);
+        fitErrors.push_back(fitError);
+        
+        // Get the chi-square of the fit
+        double chiSq = fitFunc->GetChisquare();
+        int ndf = fitFunc->GetNDF();
+        double chiSqNDF = (ndf > 0) ? chiSq / ndf : 0;
+
+        // Create a TPaveText to display fit parameters
+        TPaveText *paveText = new TPaveText(0.2, 0.5, 0.8, 1.0, "NDC");
+        paveText->SetFillColor(0); // No fill
+        paveText->SetBorderSize(0); // No border
+        paveText->AddText(Form("Fit Value: %.3f #pm %.3f\n chi^2/ndf = %.3f", fitValue, fitError,chiSqNDF));
+
+        // Draw the TPaveText on the canvas
+        paveText->Draw();
+
+        //std::cout << "Slice from point " << i << " to " << i + sliceWidth - 1 
+                 // << ": chi^2/ndf = " << chiSqNDF << std::endl;
+        
+        // Highlight flat regions (based on chi-square threshold)
+        if (chiSqNDF < chiSqThreshold) {
+            std::cout << "Flat region found in slice: " << i << " to " << i + sliceWidth - 1 << std::endl;
+            TLine *line = new TLine(sliceGraph->GetX()[0], fitFunc->GetParameter(0), 
+                                     sliceGraph->GetX()[sliceWidth - 1], fitFunc->GetParameter(0));
+            line->SetLineColor(kRed);
+            line->Draw("same");
+        }
+
+        // Move to the next slice index
+        sliceIndex++;
+
+        // Clean up
+        delete[] xSlice;
+        delete[] ySlice;
+        delete[] exSlice;
+        delete[] eySlice;
+        delete sliceGraph;
+    }
+    std::cout << "sliceIndex  " << sliceIndex <<endl;
+
+    TH1F *fitValueHist = new TH1F("fitValueHist", "Fit Values", 1000, 0.9, 1.0); // Adjust range as needed
+    for (size_t k = 0; k < fitValues.size(); ++k) {
+        fitValueHist->Fill(fitValues[k]);
+    }
+    sliceCanvas->cd(sliceIndex);
+    fitValueHist->Draw();
+    */

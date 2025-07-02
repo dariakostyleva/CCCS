@@ -4,11 +4,10 @@
 #include <vector>
 #include <cmath> 
 
-void draw_transm_y2(){
+void draw_transm_all_y4(){
 
-    const std::string file_out_name = "s533_50_empty_53-54_transm_y2.txt";
-    const std::string file_in_name = "s533_50_gC_12mm_46-47_transm_y2.txt";
-
+    const std::string file_out_name = "s533_50_empty_53-54_transm_all_y4.txt";
+    const std::string file_in_name = "s533_50_gC_12mm_46-47_transm_all_y4.txt";
     std::ifstream file_out(file_out_name);
     std::ifstream file_in(file_in_name);
 
@@ -78,6 +77,10 @@ void draw_transm_y2(){
     for (double val2 : Y_in) {
         //std::cout << "Y_in: " << val2 << " "<< std::endl;
     }
+    // Print X_in
+    for (double val22 : X_in) {
+        //std::cout << "X_in: " << val22 << " "<< std::endl;
+    }
 
     // Calculate cross section by dividing vetors
     for (size_t i = 0; i < n_out; ++i) {
@@ -108,7 +111,6 @@ void draw_transm_y2(){
     //*****************************
     //COMPARISON TO CENTRAL REGION !!!!    
     //*****************************
-    std::cout << "** COMPARISON TO CENTRAL REGION **"<< std::endl;
 
     double sumY = 0;
     int count = 0;
@@ -119,7 +121,7 @@ void draw_transm_y2(){
     for (int i = 0; i < graph_in->GetN(); ++i) {
         double x, y;
         graph_in->GetPoint(i, x, y);
-    //std::cout << "x: " << x << " y "<<y<< std::endl;
+	//std::cout << "x: " << x << " y "<<y<< std::endl;
         if (x >= -5 && x <= 5) {
             sumY += y;
             ++count;
@@ -134,6 +136,8 @@ void draw_transm_y2(){
     }
     // Vector to store indices of consecutive close points
     std::vector<int> closePoints;
+
+    // Flag to check if we have found a valid sequence of points
     bool foundSequence = false;
     double x_first, x_last;
 
@@ -145,8 +149,8 @@ void draw_transm_y2(){
         double percentageDifference = std::abs(y - averageY) / averageY * 100;
 
         if (percentageDifference < percentageDifference_limit) {
-            //std::cout << "percentageDifference = " << percentageDifference  << std::endl;
-            //std::cout << "X = " << x << ", Y = " << y << std::endl;
+            std::cout << "percentageDifference = " << percentageDifference  << std::endl;
+            std::cout << "X = " << x << ", Y = " << y << std::endl;
             closePoints.push_back(i);
 
             // Record the first and last X values within the first valid range
@@ -155,15 +159,15 @@ void draw_transm_y2(){
             }
             x_last = x; // Continuously update to the last X within the sequence
         } else {
-            // If a sequence of 5 or more consecutive points was found, stop searching
-            if (closePoints.size() >= 5) {
+            // If a sequence of 5 or more consecutive points was found, print them
+            if (closePoints.size() >= 3) {
                 foundSequence = true;
                 std::cout << "Found a range with " << closePoints.size() 
-                          << " consecutive X points where Y is within "<< percentageDifference_limit 
-                          << "% of the average:";
+                          << " consecutive points where Y is within "<< percentageDifference_limit 
+                          << "% of the average:" << std::endl;
                 for (int j : closePoints) {
                     graph_in->GetPoint(j, x, y);
-                    std::cout << x << " ";
+                    std::cout << "X = " << x << ", Y = " << y << std::endl;
                 }
                 break; // Stop after finding the first valid range
             }
@@ -172,15 +176,14 @@ void draw_transm_y2(){
     }
 
     // Print any remaining sequence if it ends with the last points in the graph
-    if (closePoints.size() >= 5) {
+    if (closePoints.size() >= 3) {
         foundSequence = true;
         std::cout << "Found a range with " << closePoints.size() 
-                          << " consecutive X points where Y is within "<< percentageDifference_limit 
-                          << "% of the average:";
+                  << " consecutive points where Y is within 1% of the average:" << std::endl;
         for (int j : closePoints) {
             double x, y;
             graph_in->GetPoint(j, x, y);
-            std::cout  << x <<" ";
+            std::cout << "X = " << x << ", Y = " << y << std::endl;
         }
     }
 
@@ -207,13 +210,10 @@ void draw_transm_y2(){
         std::cout << "No range of 5 or more consecutive points found where Y is within 1% of the average." << std::endl;
     }
 
-    std::cout << std::endl;
+  
     //*****************************
     //DERIVATIVES !!!!    
     //*****************************
-    int window = 3;  // Moving average window
-    double threshold = 0.004; // Threshold to select "stable" region of transmission
-    int consec_num = 5;  // Minimal number of points where transmission should be "stable"
     std::vector<double> Derivative;
     std::vector<int> flat_indices;
     double thresh_deriv = 0.004;  // Derivative threshold for "flatness"
@@ -234,14 +234,14 @@ void draw_transm_y2(){
     for (size_t i = 0; i < flat_indices.size(); i++) {
         std::cout << X_in[flat_indices[i]] << " ";
     }
-
     std::cout << std::endl;
     
     //*****************************
     //MOVING AVERAGE !!!!    
     //*****************************
-    std::cout << "** MOVING AVERAGE **"<< std::endl;
-
+    int window = 3;  // Moving average window
+    double threshold = 0.004; // Threshold to select "stable" region of transmission
+    int consec_num = 5;  // Minimal number of points where transmission should be "stable"
     std::vector<double> Y_in_avr(n_in); // Vector to store the moving average y-values
     // Loop to compute the moving average
     for (int i = 0; i < n_in; ++i) {
@@ -272,8 +272,7 @@ void draw_transm_y2(){
     }
     TGraph* graph_in_diff = new TGraph(n_in, &X_in[0], &Y_in_avr_diff[0]);
     TGraph* graph_threshold = new TGraph(n_in, &X_in[0], &Y_threshold[0]);
-
-    //finding x of stable y
+    // Finding x of stable y
     int consecutive_count = 0;
     int start_index = -1;           // To store the starting index of the range
     int end_index = -1;             // To store the ending index of the range
@@ -334,6 +333,7 @@ void draw_transm_y2(){
     graph_cccs->Fit(fitpol0, "RQ");
     double a = fitpol0->GetParameter(0);
     double aErr = fitpol0->GetParError(0);
+    //return;
 
     //**************************************
     // Plotting
@@ -379,7 +379,7 @@ void draw_transm_y2(){
     c1->cd(2);
     graph_in_diff->SetMarkerStyle(20);
     graph_in_diff->SetMarkerColor(kBlack);
-    graph_in_diff->GetXaxis()->SetTitle("Y position at S2");
+    graph_in_diff->GetXaxis()->SetTitle("X position at S4");
     graph_in_diff->GetYaxis()->SetTitle("Absolute difference");
     graph_in_diff->Draw("AP");  
     // Add a horizontal line at the threshold value
@@ -391,7 +391,7 @@ void draw_transm_y2(){
     c1->cd(3);
     graph_threshold->SetMarkerStyle(20);
     graph_threshold->SetMarkerColor(kBlack);
-    graph_threshold->GetXaxis()->SetTitle("Y position at S2");
+    graph_threshold->GetXaxis()->SetTitle("X position at S4");
     graph_threshold->GetYaxis()->SetTitle("Threshold crossing");
     graph_threshold->Draw("AP");  
     c1->cd(4);
@@ -411,10 +411,10 @@ void draw_transm_y2(){
     graph_out->SetMarkerColor(kBlue);
     graph_out->SetMarkerSize(1);
     graph_out->SetLineWidth(2);
-    graph_out->GetXaxis()->SetTitle("Y position at S2");
+    graph_out->GetXaxis()->SetTitle("X position at S4");
     graph_out->GetYaxis()->SetTitle("Transmission");
     graph_out->GetYaxis()->SetRangeUser(0.9, 1.01);
-    graph_out->Draw("AP");// "A" for axis, "P" for points with errors
+    graph_out->Draw("AP");// "B" for axis, "P" for points with errors
     TLine *line1 = new TLine(fitlim1, 0.9, fitlim1, 1);
     line1->SetLineColor(kBlue);
     line1->SetLineStyle(2);
@@ -434,7 +434,7 @@ void draw_transm_y2(){
     graph_in->SetMarkerColor(kRed);
     graph_in->SetMarkerSize(1);
     graph_in->SetLineWidth(2);
-    graph_in->GetXaxis()->SetTitle("Y position at S2");
+    graph_in->GetXaxis()->SetTitle("X position at S4");
     graph_in->GetYaxis()->SetTitle("Transmission");
     graph_in->GetYaxis()->SetRangeUser(0.9, 1.01);
     graph_in->Draw("AP"); 
@@ -449,7 +449,7 @@ void draw_transm_y2(){
     graph_cccs->SetMarkerColor(kGreen);
     graph_cccs->SetMarkerSize(1);
     graph_cccs->SetLineWidth(2);
-    graph_cccs->GetXaxis()->SetTitle("Y position at S2");
+    graph_cccs->GetXaxis()->SetTitle("X position at S4");
     graph_cccs->GetYaxis()->SetTitle("CCCS, mbarn");
     graph_cccs->Draw("AP");
     TLegend *lc = new TLegend(0.3, 0.3, 0.4, 0.4);

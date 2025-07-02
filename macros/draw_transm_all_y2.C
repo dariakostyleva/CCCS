@@ -4,10 +4,10 @@
 #include <vector>
 #include <cmath> 
 
-void draw_transm_y2(){
+void draw_transm_all_y2(){
 
-    const std::string file_out_name = "s533_50_empty_53-54_transm_y2.txt";
-    const std::string file_in_name = "s533_50_gC_12mm_46-47_transm_y2.txt";
+    const std::string file_out_name = "s533_50_empty_53-54_transm_all_y2.txt";
+    const std::string file_in_name = "s533_50_gC_12mm_46-47_transm_all_y2.txt";
 
     std::ifstream file_out(file_out_name);
     std::ifstream file_in(file_in_name);
@@ -21,10 +21,9 @@ void draw_transm_y2(){
 
     double t = 8.87948E+22; // taregt property 12 gC, 1/cm2
     double t_err = 5.44607E+19;
-
     double cons = 1e27; //cm2 to mbarn
 
-    double percentageDifference_limit = 0.5;
+    double percentageDifference_limit = 1;
     
     if (!file_in.is_open() && !file_out.is_open()) {
         std::cerr << "Error: Could not open txt files" << std::endl;
@@ -135,6 +134,7 @@ void draw_transm_y2(){
     // Vector to store indices of consecutive close points
     std::vector<int> closePoints;
     bool foundSequence = false;
+    
     double x_first, x_last;
 
     for (int i = 0; i < graph_in->GetN(); ++i) {
@@ -156,7 +156,7 @@ void draw_transm_y2(){
             x_last = x; // Continuously update to the last X within the sequence
         } else {
             // If a sequence of 5 or more consecutive points was found, stop searching
-            if (closePoints.size() >= 5) {
+            if (closePoints.size() >= 2) {
                 foundSequence = true;
                 std::cout << "Found a range with " << closePoints.size() 
                           << " consecutive X points where Y is within "<< percentageDifference_limit 
@@ -172,7 +172,7 @@ void draw_transm_y2(){
     }
 
     // Print any remaining sequence if it ends with the last points in the graph
-    if (closePoints.size() >= 5) {
+    if (closePoints.size() >= 2) {
         foundSequence = true;
         std::cout << "Found a range with " << closePoints.size() 
                           << " consecutive X points where Y is within "<< percentageDifference_limit 
@@ -234,7 +234,6 @@ void draw_transm_y2(){
     for (size_t i = 0; i < flat_indices.size(); i++) {
         std::cout << X_in[flat_indices[i]] << " ";
     }
-
     std::cout << std::endl;
     
     //*****************************
